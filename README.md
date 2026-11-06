@@ -13,13 +13,13 @@ It is a Firefox-native take on the *Write It — Auto Typer* Chrome extension, r
 **Try it now (temporary, removed when Firefox restarts)**
 
 1. Open `about:debugging#/runtime/this-firefox`
-2. Click **Load Temporary Add-on…** and pick `extension/manifest.json` (or `dist/graphi-1.1.0.xpi`)
+2. Click **Load Temporary Add-on…** and pick `extension/manifest.json` (or `dist/graphi-1.2.0.xpi`)
 
 **Keep it installed permanently**
 
 Release Firefox only installs Mozilla-signed add-ons permanently. Either:
 
-- **Sign it for free (recommended):** upload `dist/graphi-1.1.0.xpi` at <https://addons.mozilla.org/developers/addon/submit/distribution> and choose *On your own* (unlisted). Mozilla returns a signed `.xpi` within minutes. Drag that into Firefox to install it permanently.
+- **Sign it for free (recommended):** upload `dist/graphi-1.2.0.xpi` at <https://addons.mozilla.org/developers/addon/submit/distribution> and choose *On your own* (unlisted). Mozilla returns a signed `.xpi` within minutes. Drag that into Firefox to install it permanently.
 - **Or use Firefox Developer Edition / Nightly / ESR:** set `xpinstall.signatures.required` to `false` in `about:config`, then install the `.xpi` from `about:addons` → ⚙ → *Install Add-on From File…*
 
 Rebuild the package any time with `./build.sh`.
@@ -53,6 +53,8 @@ You can rebind shortcuts in **Settings** (click one and press the new keys) or i
 - **Recovery.** Graphi remembers where a session stopped, even across reloads and browser restarts, and offers **Resume** from that point.
 - **Finish in…** Instead of a speed, set how long the typing should take (1 minute to 10 hours). Graphi solves for the speed and keeps steering during the session so it lands on time.
 - **Session reports.** Every finished or stopped session gets a report: average and peak speed, typing time, keystrokes, corrections, a speed-over-time chart, a keystroke-rhythm histogram, a list of pauses and a full keystroke replay with a scrubber. Open it from the 📊 button in the popup, the on-page panel when typing ends, or automatically (Settings → *Open report when done*). Reports are clearly labelled as automated Graphi sessions, stay on your device (last 30 kept) and can be exported as JSON.
+- **Scheduled breaks.** Take a 1–10 minute break every 15, 30, 45 or 60 minutes of typing. Breaks start between words, vary a little each time, show a countdown on the page and can be ended early.
+- **Detailed reports.** Beyond the charts and replay, each report breaks the session down per paragraph and minute by minute (characters, speed, corrections, pauses) and lists the settings used. **Print / PDF** gives a plain, logo-free version of the report with the final text, which always states that it was typed automatically with Graphi.
 - **Library.** Keep multiple texts, search them, duplicate them, and delete with undo.
 - **Live tuning.** Speed changes apply instantly to a running session.
 - **Clear status.** The toolbar badge shows progress, a paused or waiting state, completion and errors. Error messages tell you what to do next.
@@ -122,6 +124,7 @@ ruby tests/screenshots.rb        # regenerate tests/screenshots/
 | `editors_e2e.rb` | Live ProseMirror, CodeMirror 6, Lexical, Slate, Quill, Draft.js and Monaco demo pages (run with `TYPOS=8` to stress corrections) |
 | `report_e2e.rb` | Keystroke log, report page (tiles, charts, tooltips, replay and scrubbing), stopped-session reports, auto-open, delete/undo, and a 1-minute *finish in* pacing run |
 | `private_e2e.rb` | The permission hint in Settings, typing in a real private window, and no reports or addresses kept from private sessions unless you opt in |
+| `breaks_e2e.rb` | Scheduled breaks start between words, pause typing, resume, and are kept out of the report's typing time |
 | `lifecycle_e2e.rb` | Real toolbar popup, editing through the UI, the shortcut recorder, persistence across a Firefox restart, extension reload |
 | `xpi_test.rb` | The packaged `.xpi` installs cleanly and types with default settings |
 
