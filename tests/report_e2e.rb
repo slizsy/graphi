@@ -106,6 +106,36 @@ tipped = m.js(<<~JS)
   return !t.hidden && /wpm/.test(t.textContent);
 JS
 check 'speed chart shows a hover tooltip', tipped
+detail = m.js(<<~JS)
+  const rows = (id) => [...document.querySelectorAll('#' + id + ' tbody tr')].map(r => [...r.cells].map(c => c.textContent.trim()));
+  return {
+    paras: rows('paraTable'),
+    minutes: rows('minuteTable'),
+    settings: [...document.querySelectorAll('#settingsList dt')].map(d => d.textContent),
+    foot: document.getElementById('printFoot').textContent,
+  };
+JS
+paras = detail['paras']
+check 'paragraph table has one row per paragraph', paras.length == 2 && paras[0][1].start_with?('The quick brown') && paras[1][1].start_with?('Sphinx'), paras.inspect
+check 'paragraph characters add up to the text', paras.sum { |p| p[2].delete(',').to_i } == TEXT.delete("\n").chars.length
+check 'minute-by-minute table covers the session', detail['minutes'].length >= 1 && detail['minutes'].sum { |r| r[1].delete(',').to_i } == TEXT.chars.length
+check 'settings used are listed', detail['settings'].include?('Pace') && detail['settings'].include?('Scheduled breaks')
+check 'print version keeps the automated-typing note', detail['foot'].start_with?('Typed automatically with the Graphi auto typer')
+# Print media: no sidebar/logo or controls, full text, note visible.
+medium = lambda do |v|
+  chrome(m, %q(for (const w of Services.wm.getEnumerator("navigator:browser")) for (const b of w.gBrowser.browsers) if (b.currentURI.spec.includes("/report/report.html")) b.browsingContext.mediumOverride = args[0]; return true;), [v])
+end
+medium.call(%q(print))
+sleep 0.3
+pr = m.js(<<~JS)
+  dispatchEvent(new Event('beforeprint')); // as Firefox does when printing
+  const d = (s) => getComputedStyle(document.querySelector(s)).display;
+  return { side: d('.side'), actions: d('.head-actions'), transport: d('.transport'), foot: d('#printFoot'),
+           ink: document.getElementById('ink').textContent };
+JS
+medium.call(%q())
+check %q(print/PDF view has no sidebar, logo or controls), pr[%q(side)] == %q(none) && pr[%q(actions)] == %q(none) && pr[%q(transport)] == %q(none), pr.inspect
+check %q(print/PDF view shows the full text and the automated-typing note), pr[%q(foot)] == %q(block) && pr[%q(ink)] == TEXT
 m.screenshot(File.join(__dir__, 'screenshots', 'report.png'))
 
 puts "\n\e[1mStopping mid-typo\e[0m"
