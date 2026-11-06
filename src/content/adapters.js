@@ -55,6 +55,39 @@
     return { key, code: '', keyCode: 0, shift: false };
   }
 
+  // Firefox fires `beforeinput` for execCommand edits; Chromium doesn't. Many
+  // editors (Slate, Lexical, Google Docs' input layer) only listen for
+  // beforeinput, so on Chromium we send one ourselves first — the same thing
+  // the browser does when a person types — and only let execCommand make the
+  // edit if the page didn't take it.
+  const EXEC_FIRES_BEFOREINPUT = String(globalThis.browser?.runtime?.getURL?.('')).startsWith('moz-extension:');
+  const INPUT_TYPES = {
+    insertText: 'insertText',
+    insertParagraph: 'insertParagraph',
+    insertLineBreak: 'insertLineBreak',
+    delete: 'deleteContentBackward',
+  };
+
+  // Returns true when the page cancelled the edit and handled it itself.
+  // Chromium fires textInput before beforeinput when a person types; React
+  // (and so Draft.js) still listens for textInput, so send both, in order.
+  function preflightBeforeInput(target, command, value) {
+    if (EXEC_FIRES_BEFOREINPUT || !INPUT_TYPES[command]) return false;
+    const win = target.ownerDocument.defaultView;
+    if (command === 'insertText' && typeof win.TextEvent === 'function') {
+      const te = target.ownerDocument.createEvent('TextEvent');
+      te.initTextEvent('textInput', true, true, win, value);
+      target.dispatchEvent(te);
+      if (te.defaultPrevented) return true;
+    }
+    const ev = new win.InputEvent('beforeinput', {
+      bubbles: true, cancelable: true, composed: true,
+      inputType: INPUT_TYPES[command], data: command === 'insertText' ? value : null,
+    });
+    target.dispatchEvent(ev);
+    return ev.defaultPrevented;
+  }
+
   // Synthesises a key event in the target's own realm (matters for iframes).
   function keyEvent(target, type, key, extra = {}) {
     const win = target.ownerDocument?.defaultView ?? window;
@@ -299,6 +332,9 @@
     _exec(command, value = null) {
       if (!this.alive()) throw new GraphiError('detached', 'The editor is no longer on the page.');
       this.focus();
+      // Chromium: give the page its beforeinput first (before the spy below,
+      // which is only for events the browser itself fires).
+      if (preflightBeforeInput(this.el, command, value)) { this._remember(); return true; }
       const win = this.doc.defaultView;
       let seen = false;
       const spy = () => { seen = true; };
@@ -407,7 +443,7 @@
       if (strategy === 'execcommand') {
         this.focus();
         keyEvent(target, 'keydown', ch);
-        doc.execCommand('insertText', false, ch);
+        if (!preflightBeforeInput(target, 'insertText', ch)) doc.execCommand('insertText', false, ch);
         keyEvent(target, 'keyup', ch);
         return;
       }
@@ -463,6 +499,59 @@
 
   // ---- Resolution -------------------------------------------------------------
 
+  // Chromium's EditContext API, used by Monaco / VS Code for the web: the
+  // focused element isn't editable at all — the page keeps the text itself
+  // and listens for `textupdate` events on the element's EditContext.
+  class EditContextAdapter {
+    static matches(el) {
+      return !!el && 'editContext' in el && !!el.editContext;
+    }
+
+    constructor(el) {
+      this.el = el;
+      this.kind = 'editcontext';
+      this.label = 'code editor';
+    }
+
+    alive() { return this.el.isConnected && !!this.el.editContext; }
+    saveCaret() {}
+    restoreCaret() { this.focus(); }
+
+    focus() {
+      if (this.el.ownerDocument.activeElement !== this.el) this.el.focus({ preventScroll: true });
+    }
+
+    // Replaces the selected range (or inserts at the caret) with `text`.
+    _update(text, deleteBack = false) {
+      const ec = this.el.editContext;
+      let start = Math.min(ec.selectionStart, ec.selectionEnd);
+      const end = Math.max(ec.selectionStart, ec.selectionEnd);
+      if (deleteBack && start === end) start = Math.max(0, start - 1);
+      const win = this.el.ownerDocument.defaultView;
+      ec.dispatchEvent(new win.TextUpdateEvent('textupdate', {
+        text, updateRangeStart: start, updateRangeEnd: end,
+        selectionStart: start + text.length, selectionEnd: start + text.length,
+      }));
+    }
+
+    insert(ch) {
+      this.focus();
+      press(this.el, ch.length === 1 ? ch : 'Unidentified', () => this._update(ch));
+    }
+
+    // Editors handle Enter and Backspace in keydown; if this one doesn't,
+    // fall back to editing through the EditContext.
+    newline() {
+      this.focus();
+      press(this.el, 'Enter', () => this._update('\n'));
+    }
+
+    backspace() {
+      this.focus();
+      press(this.el, 'Backspace', () => this._update('', true));
+    }
+  }
+
   function adapterFor(el, settings = {}) {
     if (GoogleDocsAdapter.detect()) return new GoogleDocsAdapter(settings.docsMethod);
     if (!el) return null;
@@ -471,6 +560,7 @@
       throw new GraphiError('unsupported', `Graphi can't type into a ${el.type} field. Pick a text field instead.`);
     }
     if (isRichEditable(el)) return new RichAdapter(el);
+    if (EditContextAdapter.matches(el)) return new EditContextAdapter(el);
     return null;
   }
 
@@ -482,7 +572,7 @@
   }
 
   function isEditableTarget(el) {
-    return isTextField(el) || isRichEditable(el);
+    return isTextField(el) || isRichEditable(el) || EditContextAdapter.matches(el);
   }
 
   NS.Adapters = { resolveFocused, adapterFor, deepActiveElement, isEditableTarget, GraphiError, GoogleDocsAdapter, keyInfo };
