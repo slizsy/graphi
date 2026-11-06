@@ -1,0 +1,56 @@
+{
+  "manifest_version": 3,
+  "name": "Graphi — Human Auto Typer",
+  "short_name": "Graphi",
+  "version": "1.1.0",
+  "description": "Types your text into Google Docs, Slides and almost any web text field — keystroke by keystroke, at a natural human rhythm.",
+  "author": "Graphi",
+  "icons": {
+    "48": "assets/icons/icon.svg",
+    "96": "assets/icons/icon.svg",
+    "128": "assets/icons/icon.svg"
+  },
+  "action": {
+    "default_title": "Graphi",
+    "default_popup": "popup/popup.html",
+    "default_area": "navbar",
+    "default_icon": {
+      "16": "assets/icons/toolbar.svg",
+      "32": "assets/icons/toolbar.svg"
+    }
+  },
+  "background": {
+    "scripts": ["background/background.js"],
+    "type": "module"
+  },
+  "incognito": "spanning",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "optional_host_permissions": ["<all_urls>"],
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/fonts/Geist-Variable.woff2", "assets/fonts/GeistMono-Variable.woff2"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+Shift+K" },
+      "description": "Open Graphi"
+    },
+    "toggle-typing": {
+      "suggested_key": { "default": "Alt+Shift+P" },
+      "description": "Start, pause or resume typing"
+    },
+    "stop-typing": {
+      "suggested_key": { "default": "Alt+Shift+X" },
+      "description": "Stop typing"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "graphi@graphi.app",
+      "strict_min_version": "128.0",
+      "data_collection_permissions": { "required": ["none"] }
+    }
+  }
+}
