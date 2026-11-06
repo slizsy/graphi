@@ -40,7 +40,8 @@ export function initDock({ start, control }) {
       const labels = { typing: 'Typing', paused: snap.pauseReason || 'Paused', countdown: 'Starting', arming: 'Waiting for a field' };
       $('#sessState').textContent = labels[snap.state];
       let meta = '';
-      if (snap.state === 'typing') meta = `${snap.wpm ? `${snap.wpm} wpm · ` : ''}${snap.eta != null ? `${fmtClock(snap.eta)} left` : ''}`;
+      if (snap.state === 'typing' && snap.breakLeft > 0) meta = `On a break · ${fmtClock(snap.breakLeft)} left`;
+      else if (snap.state === 'typing') meta = `${snap.wpm ? `${snap.wpm} wpm · ` : ''}${snap.eta != null ? `${fmtClock(snap.eta)} left` : ''}`;
       else if (snap.state === 'paused') meta = `${snap.typed.toLocaleString()} / ${snap.total.toLocaleString()} chars`;
       else if (snap.state === 'arming') meta = 'Click into a text field on the page';
       else meta = snap.target ? `into ${snap.target}` : '';
