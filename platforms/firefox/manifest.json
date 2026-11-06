@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Graphi — Human Auto Typer",
   "short_name": "Graphi",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Types your text into Google Docs, Slides and almost any web text field — keystroke by keystroke, at a natural human rhythm.",
   "author": "Graphi",
   "icons": {
