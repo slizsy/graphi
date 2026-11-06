@@ -275,8 +275,8 @@
         <div class="card" id="privateCard">
           <div class="card-row"><span class="eyebrow">Private windows</span><span class="pill-state mono" id="privateState"></span></div>
           <div class="private-help" id="privateHelp">
-            <p class="note">Firefox only lets you turn this on yourself:</p>
-            <ol class="steps">
+            <p class="note">Only you can turn this on, in the browser's own settings:</p>
+            <ol class="steps" id="privateSteps">
               <li>Open <b>about:addons</b> (<kbd class="k" id="addonsKey">Ctrl ⇧ A</kbd>)</li>
               <li>Click <b>Graphi</b></li>
               <li>Set <b>Run in Private Windows</b> to <b>Allow</b></li>
@@ -292,7 +292,7 @@
         <div class="card">
           <div class="card-row"><span class="eyebrow">Compatibility</span></div>
           <div class="toggle-row">
-            <div><span class="toggle-title">Embedded editors</span><span class="toggle-sub">Type inside frames, e.g. Word for the web. Firefox will ask to allow access to all sites.</span></div>
+            <div><span class="toggle-title">Embedded editors</span><span class="toggle-sub">Type inside frames, e.g. Word for the web. The browser will ask to allow access to all sites.</span></div>
             <label class="switch"><input type="checkbox" id="allFrames"><span></span></label>
           </div>
           <div class="field">
@@ -306,7 +306,7 @@
 
         <div class="settings-foot">
           <button class="btn btn-ghost btn-sm" id="resetSettings">Reset settings</button>
-          <span class="mono dim" id="version">v1.2.0</span>
+          <span class="mono dim" id="version">v1.3.0</span>
         </div>
         <p class="privacy">Your text never leaves this device. Graphi has no servers and no analytics.</p>
       </section>

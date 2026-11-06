@@ -5,6 +5,7 @@ import { $, $$, h, toast, bindSegmented, setSegmented } from '../components/ui.j
 import { state, subscribe, setSettings, replaceSettings } from '../store.js';
 import { resetSettings } from '../../shared/storage.js';
 import { shortcutParts } from '../../shared/format.js';
+import { IS_FIREFOX, CAN_EDIT_SHORTCUTS, SHORTCUTS_PAGE, EXTENSIONS_PAGE } from '../../shared/platform.js';
 
 const COMMAND_LABELS = {
   'toggle-typing': 'Start · pause · resume',
@@ -19,7 +20,7 @@ const KEY_NAMES = {
   ArrowLeft: 'Left', ArrowRight: 'Right',
 };
 
-// Translates a keydown into Firefox's shortcut syntax, or null if invalid.
+// Translates a keydown into WebExtension shortcut syntax, or null if invalid.
 function comboFromEvent(e, os) {
   let key = null;
   if (/^Key[A-Z]$/.test(e.code)) key = e.code.slice(3);
@@ -38,6 +39,12 @@ function comboFromEvent(e, os) {
   if (/^F\d+$/.test(key) && mods.length === 0) return key;
   if (primary.length < 1 || primary.length > 2 || mods.length > 3) return null;
   return [...mods, key].join('+');
+}
+
+function shortcutHint() {
+  return CAN_EDIT_SHORTCUTS
+    ? 'Click a shortcut to record a new one. Use at least one of Alt or Ctrl.'
+    : "Click a shortcut to change it on the browser's shortcuts page.";
 }
 
 export function initSettings() {
@@ -61,7 +68,7 @@ export function initSettings() {
     recording.classList.remove('recording');
     recording = null;
     document.removeEventListener('keydown', onRecordKey, true);
-    $('#shortcutNote').textContent = 'Click a shortcut to record a new one. Use at least one of Alt or Ctrl.';
+    $('#shortcutNote').textContent = shortcutHint();
     renderShortcuts();
   }
 
@@ -86,7 +93,7 @@ export function initSettings() {
       await browser.commands.update({ name, shortcut: combo });
       toast(`Shortcut set to ${shortcutParts(combo, state.os).join(state.os === 'mac' ? '' : '+')}`);
     } catch (err) {
-      toast('Firefox rejected that shortcut — it may already be taken.', { tone: 'error' });
+      toast('The browser rejected that shortcut — it may already be taken.', { tone: 'error' });
     }
     stopRecording();
   }
@@ -94,6 +101,11 @@ export function initSettings() {
   box.addEventListener('click', (e) => {
     const btn = e.target.closest('.keys');
     if (!btn) return;
+    if (!CAN_EDIT_SHORTCUTS) {
+      // Chromium browsers only allow changing shortcuts on their own page.
+      browser.tabs.create({ url: SHORTCUTS_PAGE });
+      return;
+    }
     if (recording === btn) return stopRecording();
     stopRecording();
     recording = btn;
@@ -145,15 +157,26 @@ export function initSettings() {
     st.className = `pill-state mono ${allowed ? 'on' : 'off'}`;
     $('#privateReports').disabled = !allowed;
   }
-  $('#addonsKey').textContent = state.os === 'mac' ? '⌘ ⇧ A' : 'Ctrl ⇧ A';
-  $('#copyAddons').addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText('about:addons');
-      toast('Copied — paste it into the address bar');
-    } catch {
-      toast('Type about:addons into the address bar');
-    }
-  });
+  $('#shortcutNote').textContent = shortcutHint();
+  if (IS_FIREFOX) {
+    $('#addonsKey').textContent = state.os === 'mac' ? '⌘ ⇧ A' : 'Ctrl ⇧ A';
+    $('#copyAddons').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText('about:addons');
+        toast('Copied — paste it into the address bar');
+      } catch {
+        toast('Type about:addons into the address bar');
+      }
+    });
+  } else {
+    // Chromium can open its own extension page for us.
+    $('#privateSteps').replaceChildren(
+      h('li', {}, "Open Graphi's ", h('b', {}, 'Details'), ' page (button below)'),
+      h('li', {}, 'Turn on ', h('b', {}, 'Allow in Incognito')),
+    );
+    $('#copyAddons').textContent = 'Open extension details';
+    $('#copyAddons').addEventListener('click', () => browser.tabs.create({ url: EXTENSIONS_PAGE }));
+  }
   renderPrivate();
 
   $('#version').textContent = `v${browser.runtime.getManifest().version}`;

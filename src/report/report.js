@@ -1,6 +1,7 @@
 // Graphi session report: summary, speed and rhythm charts, pauses and a
 // keystroke-accurate replay of one typing session.
 
+import '../shared/browser-shim.js';
 import { loadReports, saveReports, loadStats, KEYS } from '../shared/storage.js';
 import { formatNumber } from '../shared/format.js';
 
