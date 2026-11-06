@@ -85,6 +85,7 @@ export function initTune() {
     $('#punctuationPauses').checked = s.punctuationPauses;
     for (const seg of $$('#view-tune .segmented')) setSegmented(seg, s[seg.dataset.setting]);
     $('#correctionField .segmented').classList.toggle('disabled', !s.typoRate);
+    $('#breakLengthField .segmented').classList.toggle('disabled', !s.breakEvery);
   }
 
   subscribe((what) => {
