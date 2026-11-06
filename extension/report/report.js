@@ -14,6 +14,7 @@ const OUTCOME = {
 };
 const PAUSE_KIND = {
   thinking: ['Thinking break', '#8B6CFF'],
+  break: ['Scheduled break', '#5AC8FA'],
   hold: ['Paused by you', '#FFB547'],
   background: ['Tab in background', '#6D707B'],
   rhythm: ['Long gap', '#A7AAB4'],
@@ -122,7 +123,7 @@ export function analyze(rep) {
     if (rep.dts[i] >= 2000) pauses.push({ index: i, ms: rep.dts[i], kind: thinkingAt.has(i) ? 'thinking' : 'rhythm', at: t[i - 1] });
   }
   for (const [index, ms, kind] of rep.pauses || []) {
-    if (kind === 'hold' || kind === 'background') pauses.push({ index, ms, kind, at: index > 0 ? t[Math.min(index, n) - 1] : 0 });
+    if (kind === 'hold' || kind === 'background' || kind === 'break') pauses.push({ index, ms, kind, at: index > 0 ? t[Math.min(index, n) - 1] : 0 });
   }
   pauses.sort((a, b) => a.index - b.index || a.at - b.at);
 
@@ -480,7 +481,7 @@ const replay = {
       g.fillRect(i * 3, H - 4 - h, 2, h);
     });
     for (const p of m.pauses) {
-      if (p.kind === 'hold' || p.kind === 'background') continue;
+      if (p.kind === 'hold' || p.kind === 'background' || p.kind === 'break') continue;
       g.fillStyle = 'rgba(139,108,255,0.55)';
       const x0 = ((p.at) / m.span) * W;
       const x1 = ((p.at + p.ms) / m.span) * W;
