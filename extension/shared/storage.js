@@ -25,6 +25,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   escToStop: true,            // Esc in the page stops the session
   showHud: true,              // floating on-page control panel
   docsMethod: 'auto',         // Google Docs input strategy
+  breakEvery: 0,              // minutes of typing between scheduled breaks (0 = off)
+  breakLength: 2,             // minutes per scheduled break
   paceMode: 'wpm',            // 'wpm': fixed speed · 'duration': finish in targetMinutes
   targetMinutes: 10,          // used when paceMode is 'duration'
   autoReport: false,          // open the session report when typing finishes
@@ -64,6 +66,8 @@ export function sanitizeSettings(raw) {
   s.countdown = Number(s.countdown);
   if (!['auto', 'textinput', 'keypress', 'execcommand'].includes(s.docsMethod)) s.docsMethod = 'auto';
   if (!['wpm', 'duration'].includes(s.paceMode)) s.paceMode = 'wpm';
+  s.breakEvery = [0, 10, 15, 20, 30, 45, 60].includes(Number(s.breakEvery)) ? Number(s.breakEvery) : 0;
+  s.breakLength = [1, 2, 5, 10].includes(Number(s.breakLength)) ? Number(s.breakLength) : DEFAULT_SETTINGS.breakLength;
   s.targetMinutes = Math.round(clamp(Number(s.targetMinutes) || DEFAULT_SETTINGS.targetMinutes, LIMITS.targetMinutes));
   for (const k of ['speedDrift', 'punctuationPauses', 'pauseOnInteraction', 'pauseWhenHidden', 'escToStop', 'showHud', 'autoReport', 'privateReports']) {
     s[k] = Boolean(s[k]);
@@ -182,6 +186,7 @@ export function estimateDurationMs(text, settings) {
   ms += letters * (settings.typoRate / 100) * (perChar * 4 + 450);
   const breaks = { off: 0, occasional: 0.02, frequent: 0.06 }[settings.thinkingBreaks] ?? 0;
   ms += countWords(text) * breaks * 2600;
+  if (settings.breakEvery > 0) ms += Math.floor(ms / (settings.breakEvery * 60000)) * settings.breakLength * 60000;
   return ms;
 }
 
