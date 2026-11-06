@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Graphi — Session report</title>
+  <link rel="stylesheet" href="report.css">
+  <script type="module" src="report.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <defs><linearGradient id="bm" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#9BEA2E"/><stop offset="1" stop-color="#E4FF5C"/></linearGradient></defs>
+          <rect x="1" y="1" width="30" height="30" rx="9" fill="#12141A"/>
+          <rect x="1.5" y="1.5" width="29" height="29" rx="8.5" fill="none" stroke="rgba(255,255,255,.12)"/>
+          <g fill="url(#bm)"><rect x="6" y="13.5" width="3" height="5" rx="1.5" opacity=".5"/><rect x="10.5" y="11" width="3" height="10" rx="1.5" opacity=".78"/><rect x="19.5" y="7.5" width="3" height="17" rx="1.5"/><rect x="16.5" y="6.5" width="9" height="3" rx="1.5"/><rect x="16.5" y="22.5" width="9" height="3" rx="1.5"/></g>
+        </svg>
+        <div><div class="brand-name">Graphi</div><div class="brand-tag">Session reports</div></div>
+      </div>
+
+      <section class="lifetime" aria-label="Lifetime totals">
+        <div class="eyebrow">All time</div>
+        <div class="life-grid">
+          <div><b id="lifeSessions">0</b><span>sessions</span></div>
+          <div><b id="lifeChars">0</b><span>characters</span></div>
+          <div><b id="lifeTime">0s</b><span>typing time</span></div>
+          <div><b id="lifeWpm">—</b><span>avg wpm</span></div>
+        </div>
+      </section>
+
+      <div class="eyebrow list-eyebrow">History <span id="listCount" class="dim"></span></div>
+      <ul class="list" id="list" role="list"></ul>
+    </aside>
+
+    <main class="main" id="main">
+      <div class="empty" id="empty" hidden>
+        <div class="empty-glyph"><svg viewBox="0 0 40 40"><path d="M8 32h24M12 27v-6M20 27V11M28 27v-10"/></svg></div>
+        <h2>No sessions yet</h2>
+        <p>Every time Graphi finishes or is stopped, a report of that session appears here — speed over time, rhythm, corrections and a full replay.</p>
+      </div>
+
+      <div id="report" hidden>
+        <header class="head">
+          <div class="head-text">
+            <div class="crumbs mono"><span id="rDate"></span><span class="sep">/</span><span id="rHost"></span></div>
+            <h1 id="rTitle">Untitled</h1>
+            <div class="chips">
+              <span class="chip" id="rOutcome"><i></i><span></span></span>
+              <span class="chip ghost mono" id="rTarget"></span>
+              <span class="chip ghost mono" id="rPace"></span>
+              <span class="chip ghost mono auto-chip" title="This session was typed by Graphi, an automatic typing tool">Automated typing session</span>
+            </div>
+          </div>
+          <div class="head-actions">
+            <button class="btn" id="copySummary"><svg viewBox="0 0 16 16"><rect x="5" y="5" width="8.5" height="8.5" rx="2"/><path d="M3 10.5V4a1.5 1.5 0 0 1 1.5-1.5H10"/></svg>Copy summary</button>
+            <button class="btn" id="exportJson"><svg viewBox="0 0 16 16"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></svg>Export</button>
+            <button class="btn danger" id="deleteReport"><svg viewBox="0 0 16 16"><path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.6 8.2a1 1 0 0 0 1 .8h2.8a1 1 0 0 0 1-.8l.6-8.2"/></svg>Delete</button>
+          </div>
+        </header>
+
+        <section class="tiles" id="tiles" aria-label="Summary"></section>
+
+        <section class="card replay-card">
+          <div class="card-head">
+            <div><div class="eyebrow">Replay</div><div class="card-sub">Watch the session keystroke by keystroke</div></div>
+            <div class="speed-seg" id="speedSeg" role="group" aria-label="Replay speed">
+              <button data-x="1">1×</button><button data-x="4" aria-pressed="true">4×</button><button data-x="16">16×</button><button data-x="64">64×</button>
+            </div>
+          </div>
+          <div class="paper" id="paper"><span class="prefix" id="prefix"></span><span id="ink"></span><span class="typo" id="typo"></span><span class="caret" aria-hidden="true"></span></div>
+          <div class="transport">
+            <button class="play" id="play" aria-label="Play">
+              <svg class="i-play" viewBox="0 0 16 16"><path d="M5 3.2v9.6a.8.8 0 0 0 1.2.7l7.4-4.8a.8.8 0 0 0 0-1.4L6.2 2.5A.8.8 0 0 0 5 3.2z"/></svg>
+              <svg class="i-pause" viewBox="0 0 16 16"><rect x="4" y="3" width="2.6" height="10" rx="1"/><rect x="9.4" y="3" width="2.6" height="10" rx="1"/></svg>
+            </button>
+            <span class="mono time" id="tNow">0:00</span>
+            <div class="scrub" id="scrub">
+              <canvas id="density" aria-hidden="true"></canvas>
+              <input type="range" id="scrubber" min="0" max="1000" value="0" aria-label="Replay position">
+            </div>
+            <span class="mono time dim" id="tEnd">0:00</span>
+          </div>
+        </section>
+
+        <div class="grid2">
+          <section class="card">
+            <div class="card-head"><div><div class="eyebrow">Speed over time</div><div class="card-sub">Words per minute, 10-second rolling window</div></div></div>
+            <div class="chart" id="speedChart"></div>
+          </section>
+          <section class="card">
+            <div class="card-head"><div><div class="eyebrow">Keystroke rhythm</div><div class="card-sub">Gap between consecutive keys</div></div></div>
+            <div class="chart" id="rhythmChart"></div>
+          </section>
+        </div>
+
+        <section class="card">
+          <div class="card-head"><div><div class="eyebrow">Pauses</div><div class="card-sub">Breaks longer than two seconds, in order</div></div></div>
+          <div class="pauses" id="pauses"></div>
+        </section>
+
+        <p class="foot dim">Reports are stored only in this browser. Graphi keeps the last 30.</p>
+      </div>
+    </main>
+  </div>
+  <div class="tip" id="tip" hidden></div>
+  <div class="toast" id="toast" hidden></div>
+</body>
+</html>
