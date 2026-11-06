@@ -1,6 +1,6 @@
 # Real-world editor compatibility: drives the live demo pages of popular
 # rich-text / code editor frameworks. Requires network access.
-require_relative 'harness'
+require_relative '../support/harness'
 include Harness
 
 PROFILE = File.join(ENV['TMPDIR'] || '/tmp', "graphi-editors-#{Process.pid}")

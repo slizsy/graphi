@@ -1,7 +1,7 @@
 # Private browsing: Graphi explains the permission while it is off, and once
 # "Run in Private Windows" is allowed it types in private windows without
 # leaving history behind (unless the user opts in).
-require_relative 'harness'
+require_relative '../support/harness'
 include Harness
 
 PROFILE = File.join(ENV['TMPDIR'] || '/tmp', "graphi-private-#{Process.pid}")

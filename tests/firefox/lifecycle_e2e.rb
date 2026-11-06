@@ -1,6 +1,6 @@
 # Lifecycle tests: real toolbar popup, persistence across a Firefox restart,
 # and recovery after the extension is reloaded.
-require_relative 'harness'
+require_relative '../support/harness'
 include Harness
 
 PROFILE = File.join(ENV['TMPDIR'] || '/tmp', "graphi-life-#{Process.pid}")

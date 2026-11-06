@@ -3,7 +3,7 @@
 # The test profile resolves every hostname to 127.0.0.1, so the simulator is
 # served as http://docs.google.com:8123/document/… — the adapter's real
 # hostname/path detection is exercised, not bypassed.
-require_relative 'harness'
+require_relative '../support/harness'
 include Harness
 
 PROFILE = File.join(ENV['TMPDIR'] || '/tmp', "graphi-docs-#{Process.pid}")

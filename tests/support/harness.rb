@@ -2,8 +2,9 @@
 require_relative 'marionette'
 
 module Harness
-  ROOT = File.expand_path('..', __dir__)
-  EXT_DIR = File.join(ROOT, 'extension')
+  ROOT = File.expand_path('../..', __dir__)
+  EXT_DIR = File.join(ROOT, 'dist', 'firefox')
+  SCREENSHOTS = File.join(ROOT, 'docs', 'screenshots')
   PORT = 8123
   BASE = "http://127.0.0.1:#{PORT}"
   POPUP = "moz-extension://#{Marionette::EXT_UUID}/popup/popup.html"
@@ -31,7 +32,15 @@ module Harness
     m
   end
 
+  # Tests always run against a fresh build of src/ + platforms/firefox.
+  def build_firefox
+    return if @built
+    system(File.join(ROOT, 'scripts', 'build.sh'), 'firefox', out: File::NULL) or raise 'build failed'
+    @built = true
+  end
+
   def install(m)
+    build_firefox
     m.context('chrome')
     id = m.install_addon(EXT_DIR, temporary: true)
     m.context('content')
