@@ -1,133 +1,99 @@
-# Graphi — Human Auto Typer for Firefox
+# Graphi
 
-Graphi types your text into Google Docs, Google Slides and almost any web text field — one keystroke at a time, at a natural human rhythm, with optional realistic typos that it corrects as it goes.
+Graphi is a browser extension that types text for you, one key at a time, like a person would. Paste something in, click into a text box (or a Google Doc), hit start, and watch it go. It slows down after commas, pauses to "think" now and then, makes the odd typo and fixes it, and the end result always matches what you pasted.
 
-It is a Firefox-native take on the *Write It — Auto Typer* Chrome extension, rebuilt from scratch as a Manifest V3 WebExtension with a dark, HUD-inspired interface.
+It works in **Firefox** and in **Chrome** (plus other Chromium browsers like Edge and Brave).
 
-![Compose](tests/screenshots/popup-compose.png) ![Tune](tests/screenshots/popup-tune.png) ![Session](tests/screenshots/popup-session-typing.png)
+![Compose](docs/screenshots/popup-compose.png) ![Tune](docs/screenshots/popup-tune.png) ![Typing](docs/screenshots/popup-session-typing.png)
 
----
+## Getting it
 
-## Install
+Grab the latest files from the [Releases page](../../releases):
 
-**Try it now (temporary, removed when Firefox restarts)**
+- `graphi-firefox-<version>.xpi` for Firefox
+- `graphi-chrome-<version>.zip` for Chrome, Edge, Brave and friends
 
-1. Open `about:debugging#/runtime/this-firefox`
-2. Click **Load Temporary Add-on…** and pick `extension/manifest.json` (or `dist/graphi-1.2.0.xpi`)
+### Firefox
 
-**Keep it installed permanently**
+For a quick try, open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on…** and pick the `.xpi`. Firefox forgets temporary add-ons when it restarts.
 
-Release Firefox only installs Mozilla-signed add-ons permanently. Either:
+To keep it installed, Firefox wants the add-on signed by Mozilla. That's free: upload the `.xpi` at [addons.mozilla.org](https://addons.mozilla.org/developers/addon/submit/distribution), choose *On your own*, and you get a signed file back in a few minutes. (Developer Edition and Nightly can skip signing if you set `xpinstall.signatures.required` to `false`.)
 
-- **Sign it for free (recommended):** upload `dist/graphi-1.2.0.xpi` at <https://addons.mozilla.org/developers/addon/submit/distribution> and choose *On your own* (unlisted). Mozilla returns a signed `.xpi` within minutes. Drag that into Firefox to install it permanently.
-- **Or use Firefox Developer Edition / Nightly / ESR:** set `xpinstall.signatures.required` to `false` in `about:config`, then install the `.xpi` from `about:addons` → ⚙ → *Install Add-on From File…*
+### Chrome and other Chromium browsers
 
-Rebuild the package any time with `./build.sh`.
+1. Unzip `graphi-chrome-<version>.zip` somewhere you'll keep it.
+2. Go to `chrome://extensions` and switch on **Developer mode** (top right).
+3. Click **Load unpacked** and pick the unzipped folder.
 
-**Private windows.** Firefox runs extensions in private windows only if you allow it: open `about:addons` → **Graphi** → set **Run in Private Windows** to **Allow**. Graphi shows these steps in Settings until it is allowed. In private windows it leaves no report, statistics or page address behind, unless you turn on **Settings → Keep reports from private windows**.
+A Chrome Web Store listing is on the way.
 
-## Use it
+## Using it
 
-1. Click the Graphi button in the toolbar and paste your text in **Compose**.
-2. Pick a speed preset, or fine-tune everything in **Tune**.
-3. Click into the field (or Google Doc) where the text should go.
-4. Press **Start typing**, or press **Alt+Shift+P** without opening the popup.
+1. Click the Graphi icon in the toolbar and paste your text.
+2. Pick a speed, or open **Tune** to change how it types.
+3. Click where the text should go.
+4. Press **Start typing**, or just press **Alt+Shift+P** without opening the popup.
 
-If no field has focus when you start, Graphi waits for you to click one. A floating panel on the page shows progress, speed and time left, with Pause/Resume and Stop.
+If nothing is selected when you start, Graphi waits until you click a text box. A small panel in the corner of the page shows how far along it is, and lets you pause or stop.
 
-| Shortcut | Action |
+| Keys | What it does |
 | --- | --- |
-| **Alt+Shift+P** | Start · pause · resume |
-| **Alt+Shift+X** | Stop |
-| **Alt+Shift+K** | Open Graphi |
-| **Esc** (in the page) | Stop |
-| **Ctrl/⌘+Enter** (in the editor) | Start |
+| Alt+Shift+P | Start, pause or resume |
+| Alt+Shift+X | Stop |
+| Alt+Shift+K | Open Graphi |
+| Esc (on the page) | Stop |
 
-You can rebind shortcuts in **Settings** (click one and press the new keys) or in `about:addons` → ⚙ → *Manage Extension Shortcuts*.
+You can change the shortcuts in Graphi's settings on Firefox. Chrome keeps shortcuts on its own page (`chrome://extensions/shortcuts`), and Graphi will take you there.
 
-## Features
+## What it can do
 
-- **Human rhythm.** Speed from 10 to 250 WPM, adjustable rhythm variation, slow tempo drift, breaths after punctuation and paragraphs, and occasional "thinking" pauses.
-- **Realistic mistakes.** Neighbouring-key slips, double taps and swapped letters at a rate you choose. They're corrected instantly or "noticed" a few keys later, and the final text always matches yours exactly.
-- **Full control.** Start, pause, resume and stop from the popup, the on-page panel or keyboard shortcuts. Clicking or typing in the page pauses Graphi so you can take over, and resuming puts the caret back where it was. Typing pauses while the tab is in the background and resumes when you return.
-- **Recovery.** Graphi remembers where a session stopped, even across reloads and browser restarts, and offers **Resume** from that point.
-- **Finish in…** Instead of a speed, set how long the typing should take (1 minute to 10 hours). Graphi solves for the speed and keeps steering during the session so it lands on time.
-- **Session reports.** Every finished or stopped session gets a report: average and peak speed, typing time, keystrokes, corrections, a speed-over-time chart, a keystroke-rhythm histogram, a list of pauses and a full keystroke replay with a scrubber. Open it from the 📊 button in the popup, the on-page panel when typing ends, or automatically (Settings → *Open report when done*). Reports are clearly labelled as automated Graphi sessions, stay on your device (last 30 kept) and can be exported as JSON.
-- **Scheduled breaks.** Take a 1–10 minute break every 15, 30, 45 or 60 minutes of typing. Breaks start between words, vary a little each time, show a countdown on the page and can be ended early.
-- **Detailed reports.** Beyond the charts and replay, each report breaks the session down per paragraph and minute by minute (characters, speed, corrections, pauses) and lists the settings used. **Print / PDF** gives a plain, logo-free version of the report with the final text, which always states that it was typed automatically with Graphi.
-- **Library.** Keep multiple texts, search them, duplicate them, and delete with undo.
-- **Live tuning.** Speed changes apply instantly to a running session.
-- **Clear status.** The toolbar badge shows progress, a paused or waiting state, completion and errors. Error messages tell you what to do next.
-- **Private.** No servers, no analytics, no network requests. Everything stays in `storage.local` on your device.
+- **Type at any speed** from 10 to 250 words per minute, with as much or as little variation as you like.
+- **Finish on time.** Instead of picking a speed, tell it to finish in 20 minutes (or 3 hours) and it works out the pace.
+- **Take breaks.** Every 15 to 60 minutes it can stop for a minute or a few, always between words.
+- **Make mistakes, then fix them.** Wrong neighbouring keys, double taps, swapped letters. Some get caught right away, some a few letters later.
+- **Get out of your way.** Click or type on the page and Graphi pauses so you can take over. Switch tabs and it waits for you.
+- **Pick up where it left off**, even after a reload or a browser restart.
+- **Keep a library** of texts you type often.
+- **Show you a report** after every session: speed over time, rhythm, pauses, corrections, paragraph and minute breakdowns, and a replay of the whole thing. You can print it or save it as a PDF. Reports say plainly that the text was typed by Graphi.
+- **Stay private.** No accounts, no servers, no tracking. Everything stays in your browser.
 
 ## Where it works
 
-| Target | How Graphi types | Verified |
-| --- | --- | --- |
-| `<input>`, `<textarea>` | `execCommand('insertText')`, which produces trusted input events and native undo, plus synthetic key events | ✅ e2e, incl. React 18 controlled fields, input masks, `maxlength` |
-| contenteditable / rich editors | `execCommand` with full browser key semantics (keydown → keypress → default action → keyup) | ✅ live: ProseMirror, CodeMirror 6, Lexical, Slate, Quill, Draft.js, Monaco |
-| Google Docs & Slides | Key/text events into Docs' hidden `docs-texteventtarget-iframe`; self-calibrating (see below) | ✅ against a Docs-architecture simulator on `docs.google.com` · ⚠️ please confirm on your account |
-| Same-origin iframes | Followed automatically | ✅ |
-| Cross-origin iframes (e.g. Word for the web) | Needs the optional **Embedded editors** permission in Settings | ✅ cross-origin fixture · ⚠️ Word not tested live |
+Plain text boxes, rich text editors (it's been tested against ProseMirror, CodeMirror, Lexical, Slate, Quill, Draft.js and Monaco in both browsers), Google Docs and Google Slides, and editors inside frames once you switch on **Embedded editors** in settings.
 
-## Firefox differences and limitations
+A couple of things to know:
 
-- **No `chrome.debugger` in Firefox.** Chrome auto-typers can send OS-level keystrokes through the DevTools protocol, and Firefox has no equivalent. Graphi uses the closest reliable alternatives. Edits made through `execCommand` are genuine browser edits with *trusted* `input` events. Key events, however, are synthetic (`isTrusted: false`), so a site that ignores untrusted keydowns won't see them, though the text still arrives.
-- **Google Docs.** Docs draws the page on a canvas and reads keystrokes from a hidden iframe. Which events Docs consumes has changed over the years, so Graphi calibrates on the first character. It tries `keypress`, then legacy `textInput` (supported since Firefox 126), then `execCommand`, and keeps whichever one moves Docs' own caret. The strategies are ordered so a later one can never double-type. If Docs ever ignores typing, pick a method manually under **Settings → Google Docs input**. In Docs, after you take over mid-session, put the cursor back where typing should continue before resuming, because Graphi can't move Docs' canvas caret.
-- **Pages Firefox protects** (`about:` pages, addons.mozilla.org, the PDF viewer, Reader View) can't be typed into by any extension. Graphi explains this instead of failing silently.
-- **Background tabs** are throttled by Firefox. That's why typing pauses while a tab is hidden, which you can turn off in Settings.
-- **Code editors** such as Monaco auto-indent and auto-close brackets, just as they would for a human typist.
+- Browsers don't let any extension type on their own pages (`about:`, `chrome://`, the add-on and extension stores, the PDF viewer). Graphi will tell you when that's the problem.
+- Google Docs draws text on a canvas and reads keys from a hidden frame. Graphi figures out on the first letter which kind of key event your Docs accepts. If Docs ever ignores it, there's a manual switch under **Settings → Google Docs input**. It's been tested against a Docs-style test page; I'd love to hear how it does on real documents.
+- Private and incognito windows need your OK first, because browsers require it. Graphi's settings walk you through it. Nothing from a private session is saved unless you ask for that.
 
 ## Permissions
 
-| Permission | Why |
-| --- | --- |
-| `activeTab` | Access to the current tab *only* when you click the toolbar button or use a Graphi shortcut |
-| `scripting` | Inject the typing runtime into that tab on demand. Nothing runs on pages you don't start Graphi on |
-| `storage` | Save your texts and settings locally |
-| *optional* `<all_urls>` | Only if you turn on **Embedded editors**, to reach editors inside cross-origin frames |
+Graphi asks for as little as it can:
 
-## Project structure
+- **activeTab**: touch the current tab only when you click the icon or use a shortcut
+- **scripting**: load the typing code into that tab, and only that tab
+- **storage**: remember your texts and settings
+- **all sites** (optional, off by default): only needed for editors inside embedded frames, like Word on the web
+
+## Project layout
 
 ```
-extension/
-  manifest.json            MV3, Firefox event-page background, commands, gecko id
-  background/background.js on-demand injection, frame selection, commands, badge, recovery
-  content/engine.js        pure typing engine: timing, typos, pauses (no DOM)
-  content/adapters.js      editor adapters: fields, contenteditable, Google Docs
-  content/hud.js           on-page control panel (closed shadow DOM)
-  content/content.js       session state machine, takeover/Esc/hidden-tab guards
-  shared/storage.js        settings, library, recovery, estimates
-  shared/format.js         shortcut & time formatting
-  popup/                   popup.html/css, store, components, views (compose, tune, library, settings, dock)
-  report/                  session report page: charts, pauses, keystroke replay
-  assets/                  Geist & Geist Mono (OFL), SVG icons
-tests/                     Marionette e2e suites (Ruby stdlib only), fixtures, screenshots
-build.sh                   packages dist/graphi-<version>.xpi
+src/            everything both browsers share: popup, report page, typing engine, editor support
+platforms/      the bits that differ per browser: manifests and Chrome's PNG icons
+scripts/        build, icon and screenshot helpers
+tests/          Firefox and Chrome end-to-end tests, unit tests, fixtures
+docs/           screenshots, privacy policy, changelog, notes for developers
 ```
 
-## Tests
-
-All suites drive a real, headless Firefox through its Marionette protocol. They need only Ruby's standard library and an installed Firefox, and they use throwaway profiles, never yours.
+To build both packages:
 
 ```sh
-tests/run_all.sh                 # everything
-ruby tests/e2e.rb takeover       # one group of the main suite
-ruby tests/screenshots.rb        # regenerate tests/screenshots/
+scripts/build.sh
 ```
 
-| Suite | Covers |
-| --- | --- |
-| `engine_test.rb` | 3,000 random texts × settings × resume offsets: every plan reproduces the text exactly |
-| `e2e.rb` | Shortcut and popup start, every field type, errors, arming, pause/resume/stop, resume from offset, takeover by click/key/Esc, typo correction, speed accuracy, live tuning, hidden tabs, HUD toggle, cross-origin frames |
-| `docs_e2e.rb` | Google Docs/Slides adapter against a simulator served as `docs.google.com`, for each input strategy, with typos |
-| `editors_e2e.rb` | Live ProseMirror, CodeMirror 6, Lexical, Slate, Quill, Draft.js and Monaco demo pages (run with `TYPOS=8` to stress corrections) |
-| `report_e2e.rb` | Keystroke log, report page (tiles, charts, tooltips, replay and scrubbing), stopped-session reports, auto-open, delete/undo, and a 1-minute *finish in* pacing run |
-| `private_e2e.rb` | The permission hint in Settings, typing in a real private window, and no reports or addresses kept from private sessions unless you opt in |
-| `breaks_e2e.rb` | Scheduled breaks start between words, pause typing, resume, and are kept out of the report's typing time |
-| `lifecycle_e2e.rb` | Real toolbar popup, editing through the UI, the shortcut recorder, persistence across a Firefox restart, extension reload |
-| `xpi_test.rb` | The packaged `.xpi` installs cleanly and types with default settings |
+That puts unpacked builds in `dist/firefox` and `dist/chrome`, plus the `.xpi` and `.zip` next to them. There's nothing to install first, no npm or bundler. See [docs/development.md](docs/development.md) for running the tests.
 
 ## Credits
 
-Fonts: [Geist and Geist Mono](https://vercel.com/font) (SIL Open Font License, included). Visual direction inspired by Phenomenon Studio's *Shaga Odyssey* web design.
+Uses the [Geist](https://vercel.com/font) fonts (SIL Open Font License). The look was inspired by Phenomenon Studio's *Shaga Odyssey* design.
