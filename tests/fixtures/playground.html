@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Graphi test playground</title>
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; margin: 32px; background: #f6f6f8; color: #111; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 980px; }
+  label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: 13px; }
+  input, textarea, [contenteditable] { font: 15px/1.5 system-ui; padding: 10px; border: 1px solid #ccd; border-radius: 8px; background: #fff; }
+  textarea, [contenteditable] { min-height: 110px; }
+</style>
+</head>
+<body>
+<h1>Graphi playground</h1>
+<div class="grid">
+  <label>Plain input <input id="plain" autocomplete="off"></label>
+  <label>Textarea <textarea id="area"></textarea></label>
+  <label>Contenteditable <div id="rich" contenteditable="true"></div></label>
+  <label>Max length 5 <input id="short" maxlength="5"></label>
+  <label>Number <input id="num" type="number"></label>
+  <label>Read only <input id="ro" readonly value="locked"></label>
+  <div id="react-root"></div>
+  <label>Mask (inserts on keydown itself) <input id="mask"></label>
+  <label>Iframe editor <iframe id="frame" style="height:120px;border:1px solid #ccd;border-radius:8px;background:#fff" srcdoc="<body style='margin:0'><textarea id='inner' style='width:96%;height:100px'></textarea></body>"></iframe></label>
+</div>
+<script>
+  // Records every input event so tests can assert trusted, framework-visible edits.
+  window.__events = [];
+  document.addEventListener('input', (e) => __events.push({ id: e.target.id, trusted: e.isTrusted, type: e.inputType }), true);
+  // A mask that performs insertion itself on keydown (common in phone/card inputs).
+  document.getElementById('mask').addEventListener('keydown', (e) => {
+    if (e.key.length === 1) { e.preventDefault(); e.target.value += e.key; }
+  });
+</script>
+<script src="react.production.min.js"></script>
+<script src="react-dom.production.min.js"></script>
+<script>
+  // A real React 18 controlled input and textarea: they only keep text that
+  // React's onChange saw, so they prove Graphi's edits are framework-visible.
+  const e = React.createElement;
+  function App() {
+    const [a, setA] = React.useState('');
+    const [b, setB] = React.useState('');
+    window.__react = { a, b };
+    return e('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+      e('label', null, 'React input', e('input', { id: 'reactInput', value: a, onChange: (ev) => setA(ev.target.value) })),
+      e('label', null, 'React textarea', e('textarea', { id: 'reactArea', value: b, onChange: (ev) => setB(ev.target.value) })));
+  }
+  ReactDOM.createRoot(document.getElementById('react-root')).render(e(App));
+</script>
+</body>
+</html>

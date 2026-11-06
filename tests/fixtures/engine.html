@@ -1,0 +1,42 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Engine property test</title>
+<script src="/ext/content/engine.js"></script>
+<script>
+  // Replays every planned step onto a buffer: whatever the settings and RNG,
+  // the result must be exactly the source text, and timing must be sane.
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const ALPH = 'abcdefghijklmnopqrstuvwxyzABCDEFGH  ,.;:!?\n\'"()-éü😀1234567890';
+  window.runEngineTests = (n = 3000) => {
+    const failures = [];
+    let steps = 0, typos = 0;
+    for (let k = 0; k < n; k++) {
+      const rng = mulberry32(k + 1);
+      const len = Math.floor(rng() * 120);
+      const chars = Array.from(ALPH);
+      let text = '';
+      for (let i = 0; i < len; i++) text += chars[Math.floor(rng() * chars.length)];
+      const s = { wpm: 10 + Math.floor(rng() * 240), variability: Math.floor(rng() * 100), speedDrift: rng() < .5,
+        typoRate: rng() < .2 ? 0 : rng() * 8, correction: rng() < .5 ? 'instant' : 'natural', punctuationPauses: rng() < .5,
+        thinkingBreaks: ['off', 'occasional', 'frequent'][Math.floor(rng() * 3)] };
+      const start = rng() < .3 ? Math.floor(rng() * (Array.from(text).length + 1)) : 0;
+      const plan = __graphi.Engine.createPlan(text, { startOffset: start, getSettings: () => s, rng });
+      const out = Array.from(text).slice(0, start);
+      let guard = 0, step, lastCommitted = start, bad = '';
+      while ((step = plan.next()).kind !== 'done') {
+        if (++guard > 100000) { bad = 'runaway'; break; }
+        steps++;
+        if (step.kind === 'type') {
+          out.push(step.ch);
+          if (step.commit) { if (step.offset !== lastCommitted + 1) bad = 'offset'; lastCommitted = step.offset; } else typos++;
+          if (!(step.delay >= 8 && step.delay < 20000)) bad = 'delay ' + step.delay;
+        } else if (step.kind === 'backspace') { out.pop(); }
+        else if (step.kind === 'pause' && !(step.ms > 0 && step.ms < 10000)) bad = 'pause ' + step.ms;
+      }
+      if (!bad && out.join('') !== text) bad = 'mismatch';
+      if (bad) failures.push({ k, bad, text, got: out.join(''), s });
+      if (failures.length > 5) break;
+    }
+    return { cases: n, steps, typos, failures };
+  };
+</script>
