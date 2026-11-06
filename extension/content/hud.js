@@ -258,6 +258,14 @@
             <div class="row"><button class="act" data-act="stop">Cancel</button><button class="act primary" data-act="skip">${ICON.play}Start now</button></div>`;
           break;
         case 'typing':
+          if (snap.breakLeft > 0) {
+            html = `<div class="stats"><div class="pct">${pct}<small>%</small></div><div class="meta">On a break<br><span style="opacity:.7">${fmtTime(snap.breakLeft)} left</span></div></div>
+              <div class="bar"><div class="fill" style="width:${(snap.progress || 0) * 100}%"></div></div>
+              <div class="row"><button class="act primary" data-act="skipbreak">${ICON.play}End break</button><button class="act danger" data-act="stop">${ICON.stop}Stop</button></div>`;
+            this._breakTick(snap);
+            break;
+          }
+        // falls through
         case 'paused': {
           const meta = state === 'paused'
             ? (snap.pauseReason ? esc(snap.pauseReason) : 'On hold')
@@ -311,6 +319,15 @@
       if (state === 'error' || state === 'arming' || state === 'countdown') this.setMinimized(false);
     }
 
+    // Count the break down every second without waiting for the runtime.
+    _breakTick(snap) {
+      clearTimeout(this.breakTimer);
+      const end = Date.now() + snap.breakLeft;
+      this.breakTimer = setTimeout(() => {
+        if (this.last === snap) this.render({ ...snap, breakLeft: Math.max(0, end - Date.now()) });
+      }, 1000);
+    }
+
     _autoHide(ms) {
       clearTimeout(this.hideTimer);
       this.hideTimer = setTimeout(() => this.hide(), ms);
@@ -332,7 +349,7 @@
   }
 
   function shapeKey(snap) {
-    return `${snap.state}|${snap.hint || ''}|${snap.shortcuts?.toggle || ''}`;
+    return `${snap.state}|${snap.breakLeft > 0 ? 'break' : ''}|${snap.hint || ''}|${snap.shortcuts?.toggle || ''}`;
   }
 
   NS.Hud = Hud;
