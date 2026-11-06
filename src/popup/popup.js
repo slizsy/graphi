@@ -1,5 +1,6 @@
 // Graphi popup entry point: wires the store, views and live session updates.
 
+import '../shared/browser-shim.js';
 import { $, $$, toast } from './components/ui.js';
 import { state, init, flush, setSnapshot, refreshLastSession, emit, subscribe } from './store.js';
 import { initCompose } from './views/compose.js';
@@ -10,7 +11,7 @@ import { initDock } from './views/dock.js';
 
 const VIEWS = ['compose', 'tune', 'library', 'settings'];
 const LIVE = new Set(['arming', 'countdown', 'typing', 'paused']);
-// Opened as a regular tab (e.g. from tests or about:addons) the popup can be
+// Opened as a regular tab (e.g. from tests) the popup can be
 // pointed at another tab with ?tab=<id>, and must not close itself.
 const params = new URLSearchParams(location.search);
 const inTab = params.has('tab');
