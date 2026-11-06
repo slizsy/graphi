@@ -127,9 +127,47 @@ export function analyze(rep) {
   }
   pauses.sort((a, b) => a.index - b.index || a.at - b.at);
 
+  // Per paragraph: commits split on newlines; corrections are the backspaces
+  // made while that paragraph was being typed.
+  const paragraphs = [];
+  let para = null;
+  for (let i = 0; i < n; i++) {
+    const k = keys[i];
+    if (k === BS) { if (para) para.corrections += 1; continue; }
+    if (typos.has(i)) continue;
+    if (k === '\n') { if (para) { paragraphs.push(para); para = null; } continue; }
+    if (!para) para = { start: i > 0 ? t[i - 1] : 0, end: t[i], chars: 0, corrections: 0, preview: '' };
+    para.chars += 1;
+    para.end = t[i];
+    if (para.preview.length < 70) para.preview += k;
+  }
+  if (para) paragraphs.push(para);
+  for (const p of paragraphs) {
+    p.ms = Math.max(1, p.end - p.start);
+    p.wpm = Math.round((p.chars / 5) / (p.ms / 60000));
+  }
+
+  // Minute by minute, on the typing clock.
+  const minutes = [];
+  for (let i = 0; i < n; i++) {
+    const mi = Math.floor(t[i] / 60000);
+    while (minutes.length <= mi) minutes.push({ chars: 0, corrections: 0, pauses: 0, typos: 0 });
+    const b = minutes[mi];
+    if (keys[i] === BS) b.corrections += 1;
+    else if (typos.has(i)) b.typos += 1;
+    else b.chars += 1;
+    if (i > 0 && rep.dts[i] >= 2000) b.pauses += 1;
+  }
+  minutes.forEach((b, i) => {
+    const len = i === minutes.length - 1 ? Math.max(1000, span - i * 60000) : 60000;
+    b.wpm = Math.round((b.chars / 5) / (len / 60000));
+    b.partial = len < 60000;
+  });
+
   const typed = keys.length - backspaces;
   return {
-    keys, t, n, span, typos, commits, backspaces, activeMs, avgWpm, peakWpm, series, hist, median, pauses,
+    keys, t, n, span, typos, commits, backspaces, activeMs, avgWpm, peakWpm, series, hist, median, pauses, paragraphs, minutes,
+    breakMs: rep.breakMs || 0,
     mistakes: typos.size,
     accuracy: typed ? commits / typed : 1,
     chars: Math.max(0, rep.endOffset - rep.startOffset),
@@ -181,6 +219,7 @@ function select(id, push = false) {
   replay.load(rep, model);
   drawCharts();
   renderPauses(model);
+  renderTables(rep, model);
   document.title = `${rep.title || 'Untitled'} — Graphi report`;
 }
 
@@ -234,6 +273,55 @@ function renderPauses(m) {
     return el('button', { class: 'pause', style: `--tone:${tone}`, title: `Jump the replay to ${clock(p.at)}`, onclick: () => { replay.seek(p.at); document.querySelector('.replay-card').scrollIntoView({ behavior: 'smooth', block: 'center' }); } },
       el('i'), el('b', {}, secs(p.ms)), label, el('span', { class: 'dim mono' }, `@ ${clock(p.at)}`));
   }));
+}
+
+function table(head, rows) {
+  const thead = el('thead', {}, el('tr', {}, head.map(([label, cls]) => el('th', { class: cls || null }, label))));
+  const tbody = el('tbody', {}, rows.map((cells) => el('tr', {}, cells.map(([v, cls]) => el('td', { class: cls || null }, v)))));
+  return [thead, tbody];
+}
+
+function meter(v, max) {
+  return el('span', { class: 'meter' }, el('i', { style: `width:${max ? Math.round((v / max) * 100) : 0}%` }));
+}
+
+function renderTables(rep, m) {
+  const maxP = Math.max(...m.paragraphs.map((p) => p.wpm), 1);
+  $('#paraTable').replaceChildren(...table(
+    [['#'], ['Starts with', 'l'], ['Chars'], ['Time'], ['Speed'], ['Fixes']],
+    m.paragraphs.map((p, i) => [
+      [String(i + 1), 'num'],
+      [`${p.preview.trim()}${p.chars > p.preview.length ? '…' : ''}`, 'l'],
+      [formatNumber(p.chars), 'num'],
+      [human(p.ms), 'num'],
+      [[`${p.wpm} wpm`, meter(p.wpm, maxP)], 'num'],
+      [String(p.corrections), 'num'],
+    ]),
+  ));
+  const maxM = Math.max(...m.minutes.map((b) => b.wpm), 1);
+  $('#minuteTable').replaceChildren(...table(
+    [['Minute'], ['Chars'], ['Speed'], ['Fixes'], ['Pauses']],
+    m.minutes.map((b, i) => [
+      [`${i + 1}${b.partial ? '*' : ''}`, 'num'],
+      [formatNumber(b.chars), 'num'],
+      [[`${b.wpm} wpm`, meter(b.wpm, maxM)], 'num'],
+      [String(b.corrections), 'num'],
+      [String(b.pauses), 'num'],
+    ]),
+  ));
+  const s = rep.settings || {};
+  const rows = [
+    ['Pace', s.paceMode === 'duration' ? `Finish in ${s.targetMinutes} min` : `${s.wpm} wpm`],
+    ['Rhythm variation', s.variability != null ? `${s.variability}%` : '—'],
+    ['Typo rate', s.typoRate ? `${s.typoRate}% · ${s.correction === 'instant' ? 'fixed instantly' : 'noticed later'}` : 'Off'],
+    ['Thinking breaks', s.thinkingBreaks ? s.thinkingBreaks[0].toUpperCase() + s.thinkingBreaks.slice(1) : '—'],
+    ['Punctuation pauses', s.punctuationPauses ? 'On' : 'Off'],
+    ['Scheduled breaks', s.breakEvery ? `${s.breakLength} min every ${s.breakEvery} min` : 'Off'],
+    ['Time on breaks', m.breakMs ? human(m.breakMs) : '—'],
+    ['Typed into', rep.target || '—'],
+  ];
+  $('#settingsList').replaceChildren(...rows.flatMap(([k, v]) => [el('dt', {}, k), el('dd', {}, v)]));
+  $('#printFoot').textContent = `Typed automatically with the Graphi auto typer. Report generated ${dateFmt.format(Date.now())}.`;
 }
 
 // ---- Tooltip -------------------------------------------------------------------------------
@@ -515,6 +603,14 @@ function summaryText(rep, m) {
     `${formatNumber(m.n)} keystrokes · ${m.backspaces} corrections · ${m.pauses.length} pauses over 2s.`,
   ].join('\n');
 }
+
+// Print / Save as PDF shows the finished text and every table.
+addEventListener('beforeprint', () => {
+  if (!replay.m) return;
+  replay.stop();
+  replay.seek(replay.m.span);
+});
+$('#printReport').addEventListener('click', () => window.print());
 
 $('#copySummary').addEventListener('click', async () => {
   try {
