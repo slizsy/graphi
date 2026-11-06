@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="color-scheme" content="dark">
+  <title>Graphi</title>
+  <link rel="stylesheet" href="popup.css">
+  <script type="module" src="popup.js"></script>
+</head>
+<body>
+  <div class="app" id="app" data-view="compose">
+    <div class="ambient" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <defs>
+            <linearGradient id="bm" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0" stop-color="#9BEA2E"/><stop offset="1" stop-color="#E4FF5C"/>
+            </linearGradient>
+          </defs>
+          <rect x="1" y="1" width="30" height="30" rx="9" fill="#12141A"/>
+          <rect x="1.5" y="1.5" width="29" height="29" rx="8.5" fill="none" stroke="rgba(255,255,255,.12)"/>
+          <g fill="url(#bm)">
+            <rect x="6" y="13.5" width="3" height="5" rx="1.5" opacity=".5"/>
+            <rect x="10.5" y="11" width="3" height="10" rx="1.5" opacity=".78"/>
+            <rect x="19.5" y="7.5" width="3" height="17" rx="1.5"/>
+            <rect x="16.5" y="6.5" width="9" height="3" rx="1.5"/>
+            <rect x="16.5" y="22.5" width="9" height="3" rx="1.5"/>
+          </g>
+        </svg>
+        <div class="brand-text">
+          <span class="brand-name">Graphi</span>
+          <span class="brand-tag">Human auto typer</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn reports-btn" id="openReports" title="Session reports" aria-label="Session reports">
+          <svg viewBox="0 0 16 16"><path d="M2.5 13.5h11M4.5 11V8M8 11V3.5M11.5 11V6"/></svg>
+        </button>
+        <div class="status" id="status" data-state="idle" role="status" aria-live="polite">
+          <span class="status-dot"></span><span class="status-label">Idle</span>
+        </div>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <span class="tabs-indicator" aria-hidden="true"></span>
+      <button class="tab" role="tab" data-view="compose" aria-selected="true">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 12.5h10M3 8.5h10M3 4.5h6" /></svg>Compose
+      </button>
+      <button class="tab" role="tab" data-view="tune" aria-selected="false">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h6m3 0h2M2.5 11.5h2m3 0h6"/><circle cx="10" cy="4.5" r="1.5"/><circle cx="6" cy="11.5" r="1.5"/></svg>Tune
+      </button>
+      <button class="tab" role="tab" data-view="library" aria-selected="false">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="2.5"/><path d="M5.5 6h5M5.5 9h3"/></svg>Library
+      </button>
+      <button class="tab" role="tab" data-view="settings" aria-selected="false">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2"/><path d="M8 1.8v1.6M8 12.6v1.6M14.2 8h-1.6M3.4 8H1.8M12.4 3.6l-1.1 1.1M4.7 11.3l-1.1 1.1M12.4 12.4l-1.1-1.1M4.7 4.7 3.6 3.6"/></svg>Settings
+      </button>
+    </nav>
+
+    <main class="views">
+      <!-- Compose -------------------------------------------------------- -->
+      <section class="view" id="view-compose" data-view="compose" role="tabpanel">
+        <div class="doc-head">
+          <input class="doc-title" id="docTitle" maxlength="120" placeholder="Untitled" aria-label="Text title" spellcheck="false">
+          <button class="pill-btn" id="docSwitch" title="Open library">
+            <span id="docCount">1 text</span>
+            <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 3 7.5 6l-3 3"/></svg>
+          </button>
+        </div>
+
+
+        <div class="resume" id="resumeBanner" hidden>
+          <div class="resume-ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" class="ring-track"/><circle cx="18" cy="18" r="15" class="ring-fill" id="resumeRing"/></svg></div>
+          <div class="resume-text">
+            <span class="resume-title" id="resumeTitle">Left off at 0%</span>
+            <span class="resume-sub" id="resumeSub"></span>
+          </div>
+          <button class="btn btn-soft btn-sm" id="resumeBtn">Resume</button>
+          <button class="icon-btn" id="resumeDismiss" title="Dismiss" aria-label="Dismiss">
+            <svg viewBox="0 0 16 16"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg>
+          </button>
+        </div>
+
+        <div class="card editor" id="editorCard">
+          <textarea id="editor" spellcheck="true" aria-label="Text to type"
+            placeholder="Paste or write the text you want Graphi to type…"></textarea>
+          <div class="editor-empty" id="editorEmpty" aria-hidden="true">
+            <div class="empty-glyph">
+              <svg viewBox="0 0 40 40"><rect x="7" y="9" width="26" height="22" rx="5"/><path d="M13 16h14M13 21h9M13 26h11"/></svg>
+            </div>
+            <p class="empty-title">Nothing to type yet</p>
+            <p class="empty-copy">Paste your text with <kbd class="k" id="pasteKey">Ctrl V</kbd> or start writing.</p>
+          </div>
+          <div class="editor-foot">
+            <span class="mono" id="counts">0 chars · 0 words</span>
+            <span class="est mono" id="estimate" title="Estimated typing time at current settings"></span>
+            <button class="icon-btn" id="clearText" title="Clear text" aria-label="Clear text">
+              <svg viewBox="0 0 16 16"><path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.6 8.2a1 1 0 0 0 1 .8h2.8a1 1 0 0 0 1-.8l.6-8.2"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="card speed-card">
+          <div class="card-row">
+            <span class="eyebrow">Speed</span>
+            <button class="link-btn" data-goto="tune">Fine-tune
+              <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 3 7.5 6l-3 3"/></svg>
+            </button>
+          </div>
+          <div class="presets" id="presets" role="radiogroup" aria-label="Speed preset"></div>
+        </div>
+
+      </section>
+
+      <!-- Tune ---------------------------------------------------------------- -->
+      <section class="view" id="view-tune" data-view="tune" role="tabpanel" hidden>
+        <div class="card hero-card" id="paceCard">
+          <div class="card-row">
+            <span class="eyebrow"><i>01</i>Pace</span>
+            <div class="segmented mini-seg" data-setting="paceMode">
+              <button data-value="wpm">Speed</button><button data-value="duration">Finish in</button>
+            </div>
+          </div>
+          <div class="pace-duration">
+            <div class="wpm-display">
+              <button class="step-btn" data-mins="-1" aria-label="Less time">
+                <svg viewBox="0 0 16 16"><path d="M4 8h8"/></svg>
+              </button>
+              <div class="wpm-number"><output id="minsValue">10</output><span>min</span></div>
+              <button class="step-btn" data-mins="1" aria-label="More time">
+                <svg viewBox="0 0 16 16"><path d="M4 8h8M8 4v8"/></svg>
+              </button>
+            </div>
+            <div class="chip-row" id="minChips">
+              <button data-m="5">5m</button><button data-m="15">15m</button><button data-m="30">30m</button><button data-m="60">1h</button><button data-m="120">2h</button>
+            </div>
+            <p class="pace-note mono" id="paceNote">≈ 75 wpm for this text</p>
+          </div>
+          <div class="pace-speed">
+          <div class="card-row" style="margin-top:2px">
+            <span class="mono dim" id="msPerKey">160 ms / key</span>
+          </div>
+          <div class="wpm-display">
+            <button class="step-btn" data-step="-5" aria-label="Slower">
+              <svg viewBox="0 0 16 16"><path d="M4 8h8"/></svg>
+            </button>
+            <div class="wpm-number"><output id="wpmValue">75</output><span>wpm</span></div>
+            <button class="step-btn" data-step="5" aria-label="Faster">
+              <svg viewBox="0 0 16 16"><path d="M4 8h8M8 4v8"/></svg>
+            </button>
+          </div>
+          <input type="range" class="slider" id="wpm" min="10" max="250" step="1" aria-label="Words per minute">
+          <div class="scale mono"><span>10</span><span>Average human · 40–80</span><span>250</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-row"><span class="eyebrow"><i>02</i>Human feel</span></div>
+          <label class="field">
+            <span class="field-top"><span>Rhythm variation</span><output class="mono" id="variabilityValue">35%</output></span>
+            <input type="range" class="slider" id="variability" min="0" max="100" step="5">
+            <span class="field-scale mono"><span>Metronome</span><span>Erratic</span></span>
+          </label>
+          <div class="toggle-row">
+            <div><span class="toggle-title">Speed drift</span><span class="toggle-sub">Tempo wanders slowly over time</span></div>
+            <label class="switch"><input type="checkbox" id="speedDrift"><span></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><span class="toggle-title">Punctuation pauses</span><span class="toggle-sub">Breathe after commas, sentences and paragraphs</span></div>
+            <label class="switch"><input type="checkbox" id="punctuationPauses"><span></span></label>
+          </div>
+          <div class="field">
+            <span class="field-top"><span>Thinking breaks</span></span>
+            <div class="segmented" data-setting="thinkingBreaks">
+              <button data-value="off">Off</button><button data-value="occasional">Occasional</button><button data-value="frequent">Frequent</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-row"><span class="eyebrow"><i>03</i>Mistakes</span></div>
+          <label class="field">
+            <span class="field-top"><span>Typo rate</span><output class="mono" id="typoRateValue">2%</output></span>
+            <input type="range" class="slider" id="typoRate" min="0" max="8" step="0.5">
+            <span class="field-scale mono"><span>Flawless</span><span>Clumsy</span></span>
+          </label>
+          <div class="field" id="correctionField">
+            <span class="field-top"><span>Corrections</span></span>
+            <div class="segmented" data-setting="correction">
+              <button data-value="instant">Instant</button><button data-value="natural">Noticed later</button>
+            </div>
+          </div>
+          <p class="note">Mistakes are always corrected — the final text matches yours exactly.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-row"><span class="eyebrow"><i>04</i>Start delay</span></div>
+          <div class="segmented" data-setting="countdown" data-type="number">
+            <button data-value="0">None</button><button data-value="3">3s</button><button data-value="5">5s</button><button data-value="10">10s</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Library ----------------------------------------------------------------- -->
+      <section class="view" id="view-library" data-view="library" role="tabpanel" hidden>
+        <div class="lib-head">
+          <div class="lib-search">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+            <input type="search" id="libSearch" placeholder="Search texts" aria-label="Search texts">
+          </div>
+          <button class="btn btn-soft btn-sm" id="newDoc">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9"/></svg>New
+          </button>
+        </div>
+        <ul class="lib-list" id="libList" role="list"></ul>
+        <div class="lib-empty" id="libEmpty" hidden>
+          <div class="empty-glyph"><svg viewBox="0 0 40 40"><rect x="8" y="7" width="24" height="26" rx="5"/><path d="M14 15h12M14 20h8"/></svg></div>
+          <p class="empty-title" id="libEmptyTitle">Your library is empty</p>
+          <p class="empty-copy" id="libEmptyCopy">Save texts you type often and switch between them in a click.</p>
+        </div>
+      </section>
+
+      <!-- Settings ------------------------------------------------------------- -->
+      <section class="view" id="view-settings" data-view="settings" role="tabpanel" hidden>
+        <div class="card">
+          <div class="card-row"><span class="eyebrow">Keyboard shortcuts</span></div>
+          <div class="shortcuts" id="shortcuts"></div>
+          <p class="note" id="shortcutNote">Click a shortcut to record a new one. Use at least one of Alt or Ctrl.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-row"><span class="eyebrow">While typing</span></div>
+          <div class="toggle-row">
+            <div><span class="toggle-title">Pause when I take over</span><span class="toggle-sub">Clicking or typing in the page pauses Graphi</span></div>
+            <label class="switch"><input type="checkbox" id="pauseOnInteraction"><span></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><span class="toggle-title">Esc stops typing</span><span class="toggle-sub">Press Esc in the page to end the session</span></div>
+            <label class="switch"><input type="checkbox" id="escToStop"><span></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><span class="toggle-title">Pause in background tabs</span><span class="toggle-sub">Resumes when you come back to the tab</span></div>
+            <label class="switch"><input type="checkbox" id="pauseWhenHidden"><span></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><span class="toggle-title">On-page control panel</span><span class="toggle-sub">Progress, pause and stop, right on the page</span></div>
+            <label class="switch"><input type="checkbox" id="showHud"><span></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><span class="toggle-title">Open report when done</span><span class="toggle-sub">Show speed, rhythm and a replay of each finished session</span></div>
+            <label class="switch"><input type="checkbox" id="autoReport"><span></span></label>
+          </div>
+        </div>
+
+        <div class="card" id="privateCard">
+          <div class="card-row"><span class="eyebrow">Private windows</span><span class="pill-state mono" id="privateState"></span></div>
+          <div class="private-help" id="privateHelp">
+            <p class="note">Firefox only lets you turn this on yourself:</p>
+            <ol class="steps">
+              <li>Open <b>about:addons</b> (<kbd class="k" id="addonsKey">Ctrl ⇧ A</kbd>)</li>
+              <li>Click <b>Graphi</b></li>
+              <li>Set <b>Run in Private Windows</b> to <b>Allow</b></li>
+            </ol>
+            <button class="btn btn-soft btn-sm" id="copyAddons">Copy “about:addons”</button>
+          </div>
+          <div class="toggle-row">
+            <div><span class="toggle-title">Keep reports from private windows</span><span class="toggle-sub">Off: private sessions leave no report, history or page address behind</span></div>
+            <label class="switch"><input type="checkbox" id="privateReports"><span></span></label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-row"><span class="eyebrow">Compatibility</span></div>
+          <div class="toggle-row">
+            <div><span class="toggle-title">Embedded editors</span><span class="toggle-sub">Type inside frames, e.g. Word for the web. Firefox will ask to allow access to all sites.</span></div>
+            <label class="switch"><input type="checkbox" id="allFrames"><span></span></label>
+          </div>
+          <div class="field">
+            <span class="field-top"><span>Google Docs input</span></span>
+            <div class="segmented compact" data-setting="docsMethod">
+              <button data-value="auto">Auto</button><button data-value="textinput">Text</button><button data-value="keypress">Keys</button><button data-value="execcommand">Edit</button>
+            </div>
+            <span class="toggle-sub">Auto detects what Docs accepts. Only change this if Docs ignores typing.</span>
+          </div>
+        </div>
+
+        <div class="settings-foot">
+          <button class="btn btn-ghost btn-sm" id="resetSettings">Reset settings</button>
+          <span class="mono dim" id="version">v1.1.0</span>
+        </div>
+        <p class="privacy">Your text never leaves this device. Graphi has no servers and no analytics.</p>
+      </section>
+    </main>
+
+    <footer class="dock" id="dock" data-mode="idle">
+      <div class="dock-idle">
+        <button class="cta" id="startBtn">
+          <span class="cta-shine" aria-hidden="true"></span>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.2v9.6a.8.8 0 0 0 1.2.7l7.4-4.8a.8.8 0 0 0 0-1.4L6.2 2.5A.8.8 0 0 0 5 3.2z"/></svg>
+          <span class="cta-label" id="startLabel">Start typing</span>
+          <span class="cta-kbd" id="startKbd"></span>
+        </button>
+        <p class="dock-hint" id="dockHint">Click a text field first — or start, then pick one.</p>
+      </div>
+      <div class="dock-session">
+        <div class="session-top">
+          <div class="session-pct"><span id="sessPct">0</span><small>%</small></div>
+          <div class="session-meta">
+            <span class="session-state" id="sessState">Typing</span>
+            <span class="mono dim" id="sessMeta"></span>
+          </div>
+        </div>
+        <div class="progress"><div class="progress-fill" id="sessBar"></div></div>
+        <div class="session-actions">
+          <button class="btn btn-primary" id="pauseBtn">
+            <svg viewBox="0 0 16 16" class="i-pause" aria-hidden="true"><rect x="4" y="3" width="2.6" height="10" rx="1"/><rect x="9.4" y="3" width="2.6" height="10" rx="1"/></svg>
+            <svg viewBox="0 0 16 16" class="i-play" aria-hidden="true"><path d="M5 3.2v9.6a.8.8 0 0 0 1.2.7l7.4-4.8a.8.8 0 0 0 0-1.4L6.2 2.5A.8.8 0 0 0 5 3.2z"/></svg>
+            <span id="pauseLabel">Pause</span>
+          </button>
+          <button class="btn btn-danger" id="stopBtn">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="2"/></svg>Stop
+          </button>
+        </div>
+      </div>
+    </footer>
+
+    <div class="toasts" id="toasts" aria-live="assertive"></div>
+  </div>
+</body>
+</html>
