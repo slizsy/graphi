@@ -6,7 +6,7 @@
 # Two windows are used: a "control" window running a Graphi extension page
 # (to seed storage and talk to the background script) and a "page" window with
 # the site under test — so the page never becomes a hidden background tab.
-require_relative 'harness'
+require_relative '../support/harness'
 include Harness
 
 FILTER = ARGV[0]

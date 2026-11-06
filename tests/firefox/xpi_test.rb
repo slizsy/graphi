@@ -1,8 +1,8 @@
 # Verifies the packaged .xpi (not the source folder) installs and types.
-require_relative 'harness'
+require_relative '../support/harness'
 include Harness
 PROFILE = File.join(ENV['TMPDIR'] || '/tmp', "graphi-xpi-#{Process.pid}")
-xpi = Dir[File.join(ROOT, 'dist', 'graphi-*.xpi')].max
+xpi = (system(File.join(ROOT, 'scripts', 'build.sh'), 'firefox', out: File::NULL) && Dir[File.join(ROOT, 'dist', 'graphi-firefox-*.xpi')].max)
 start_server
 m = boot(PROFILE, port: 2954)
 m.context('chrome')

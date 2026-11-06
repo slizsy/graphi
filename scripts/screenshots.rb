@@ -1,8 +1,8 @@
-# Captures every popup view and state for design review → tests/screenshots/
-require_relative 'harness'
+# Captures every popup view and state for design review → docs/screenshots/
+require_relative '../tests/support/harness'
 include Harness
 
-OUT = File.join(__dir__, 'screenshots')
+OUT = SCREENSHOTS
 FileUtils.mkdir_p(OUT)
 PROFILE = File.join(ENV['TMPDIR'] || '/tmp', "graphi-shots-#{Process.pid}")
 

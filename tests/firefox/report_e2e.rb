@@ -2,7 +2,7 @@
 #
 #   ruby tests/report_e2e.rb          # everything (includes a ~1 minute pacing run)
 #   QUICK=1 ruby tests/report_e2e.rb  # skip the pacing run
-require_relative 'harness'
+require_relative '../support/harness'
 include Harness
 
 PROFILE = File.join(ENV['TMPDIR'] || '/tmp', "graphi-report-#{Process.pid}")
@@ -136,7 +136,7 @@ JS
 medium.call(%q())
 check %q(print/PDF view has no sidebar, logo or controls), pr[%q(side)] == %q(none) && pr[%q(actions)] == %q(none) && pr[%q(transport)] == %q(none), pr.inspect
 check %q(print/PDF view shows the full text and the automated-typing note), pr[%q(foot)] == %q(block) && pr[%q(ink)] == TEXT
-m.screenshot(File.join(__dir__, 'screenshots', 'report.png'))
+m.screenshot(File.join(SCREENSHOTS, 'report.png'))
 
 puts "\n\e[1mStopping mid-typo\e[0m"
 long = (TEXT + ' ') * 4

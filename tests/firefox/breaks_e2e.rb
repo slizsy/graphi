@@ -1,7 +1,7 @@
 # Scheduled breaks: Graphi stops between words, waits, then carries on, and
 # the breaks show up in the session report. Uses the test-only _breakEveryMs /
 # _breakLengthMs settings so breaks take seconds instead of minutes.
-require_relative 'harness'
+require_relative '../support/harness'
 include Harness
 
 PROFILE = File.join(ENV['TMPDIR'] || '/tmp', "graphi-breaks-#{Process.pid}")

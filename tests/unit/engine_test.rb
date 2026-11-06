@@ -1,5 +1,5 @@
 # Property test for the typing engine, run inside Firefox.
-require_relative 'harness'
+require_relative '../support/harness'
 include Harness
 PROFILE = File.join(ENV['TMPDIR'] || '/tmp', "graphi-engine-#{Process.pid}")
 start_server
