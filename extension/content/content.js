@@ -59,6 +59,55 @@
       // the page, plus the pauses between them.
       this.rec = { keys: [], dts: [], typos: [], pauses: [], lastKeyAt: 0, pausedAt: 0, firstAt: 0 };
       this.reported = false;
+      // Scheduled breaks: typing time between breaks varies ±20% each time.
+      this.breakMs = 0;
+      this.breakUntil = 0;
+      this.nextBreakAt = this.planNextBreak(0);
+    }
+
+    // Typing time so far, excluding scheduled breaks.
+    typingMs() {
+      return this.elapsedActive() - this.breakMs - (this.breakUntil ? Math.max(0, performance.now() - this.breakStartedAt) : 0);
+    }
+
+    // Break interval and length in ms. The _ms keys exist only so tests can
+    // run breaks in seconds; the UI never sets them.
+    breakEveryMs() { return this.settings._breakEveryMs ?? this.settings.breakEvery * 60000; }
+    breakLengthMs() { return this.settings._breakLengthMs ?? this.settings.breakLength * 60000; }
+
+    planNextBreak(fromMs) {
+      const every = this.breakEveryMs();
+      return every > 0 ? fromMs + every * (0.8 + Math.random() * 0.4) : Infinity;
+    }
+
+    // Breaks start between words, never in the middle of one.
+    breakDue(lastCh) {
+      if (!(this.breakEveryMs() > 0) || !/\s/.test(lastCh || '')) return false;
+      if (this.nextBreakAt === Infinity) this.nextBreakAt = this.planNextBreak(this.typingMs());
+      return this.typingMs() >= this.nextBreakAt && this.done < this.total;
+    }
+
+    async takeBreak() {
+      const ms = Math.round(this.breakLengthMs() * (0.8 + Math.random() * 0.4));
+      const at = this.rec.keys.length;
+      this.breakStartedAt = performance.now();
+      this.breakUntil = Date.now() + ms;
+      this.publish(true);
+      await this.sleep(ms);
+      const took = performance.now() - this.breakStartedAt;
+      this.breakMs += took;
+      this.breakUntil = 0;
+      // The break is logged as a pause, not as one very slow key.
+      if (this.rec.firstAt) {
+        this.rec.pauses.push([at, Math.round(took), 'break']);
+        this.rec.lastKeyAt += took;
+      }
+      this.nextBreakAt = this.planNextBreak(this.typingMs());
+      this.publish(true);
+    }
+
+    skipBreak() {
+      if (this.breakUntil) this.interrupt();
     }
 
     get total() { return this.plan.total; }
@@ -82,6 +131,7 @@
         title: this.title,
         fingerprint: this.fingerprint,
         elapsed: this.elapsedActive(),
+        breakLeft: this.breakUntil ? Math.max(0, this.breakUntil - Date.now()) : 0,
         shortcuts: this.shortcuts,
         url: location.href,
         hasReport: this.reported,
@@ -165,7 +215,8 @@
           outcome: this.state,
           startedAt: r.wallStart,
           endedAt: Date.now(),
-          activeMs: Math.round(this.elapsedActive()),
+          activeMs: Math.round(this.elapsedActive() - this.breakMs),
+          breakMs: Math.round(this.breakMs),
           startOffset: this.startOffset,
           endOffset: this.done,
           total: this.total,
@@ -173,6 +224,7 @@
             wpm: this.settings.wpm, variability: this.settings.variability, typoRate: this.settings.typoRate,
             correction: this.settings.correction, thinkingBreaks: this.settings.thinkingBreaks,
             punctuationPauses: this.settings.punctuationPauses, paceMode: this.settings.paceMode,
+            breakEvery: this.settings.breakEvery, breakLength: this.settings.breakLength,
             targetMinutes: this.settings.targetMinutes,
           },
           keys: r.keys.join(''),
@@ -319,6 +371,11 @@
           this.keyTimes.push(performance.now());
           if (this.keyTimes.length > 40) this.keyTimes.shift();
           this.publish();
+          if (step.commit && this.breakDue(step.ch)) {
+            await this.takeBreak();
+            this.keyTimes.length = 0; // don't average the break into the live speed
+            clock = performance.now();
+          }
         }
         this.setState('done');
         detachGuards();
@@ -473,6 +530,7 @@
     if (act === 'pause') session.pause('', resumeHint());
     else if (act === 'resume') session.resume();
     else if (act === 'stop') session.stop();
+    else if (act === 'skipbreak') session.skipBreak();
     else if (act === 'skip') { session.skipCountdown = true; session.interrupt(); }
   }
 
@@ -521,6 +579,7 @@
     // In "finish in" mode the session steers its own speed; the slider doesn't.
     session.settings = { ...session.settings, ...next, ...(paced ? { wpm: session.settings.wpm } : {}) };
     if (!paced) session.deadlineMs = 0;
+    if ('breakEvery' in next) session.nextBreakAt = session.planNextBreak(session.typingMs());
     if (!session.settings.showHud) hud?.hide();
     session.publish(true);
   });
