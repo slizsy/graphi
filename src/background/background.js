@@ -1,4 +1,5 @@
-// Graphi — background event page (Firefox MV3, non-persistent).
+// Graphi — background script (an event page in Firefox, a service worker in
+// Chrome; either way it can be suspended between events).
 //
 // Responsibilities:
 //  • inject the typing runtime on demand (activeTab + scripting — no blanket
@@ -6,20 +7,23 @@
 //  • route popup / keyboard-shortcut commands to the running session
 //  • mirror the session on the toolbar badge
 //  • remember where a session stopped so it can be resumed later, even after
-//    the tab was reloaded or Firefox restarted
+//    the tab was reloaded or the browser restarted
 //
 // The page may be suspended between events, so per-tab bookkeeping lives in
 // storage.session rather than in module variables.
 
+import '../shared/browser-shim.js';
+import { BROWSER, IS_FIREFOX, onMessage } from '../shared/platform.js';
 import {
   loadSettings, loadLibrary, activeDoc, saveLastSession, loadLastSession, textFingerprint,
   effectiveSettings, addReport,
 } from '../shared/storage.js';
 import { formatShortcut } from '../shared/format.js';
 
-const CONTENT_FILES = ['content/engine.js', 'content/adapters.js', 'content/hud.js', 'content/content.js'];
+const CONTENT_FILES = ['shared/browser-shim.js', 'content/engine.js', 'content/adapters.js', 'content/hud.js', 'content/content.js'];
 const ACTIVE_STATES = new Set(['arming', 'countdown', 'typing', 'paused']);
 const PROTECTED_HOSTS = new Set([
+  'chromewebstore.google.com', 'microsoftedge.microsoft.com',
   'addons.mozilla.org', 'accounts.firefox.com', 'support.mozilla.org', 'discovery.addons.mozilla.org',
   'addons.cdn.mozilla.net', 'accounts-static.cdn.mozilla.net', 'api.accounts.firefox.com',
   'content.cdn.mozilla.net', 'install.mozilla.org', 'oauth.accounts.firefox.com',
@@ -48,13 +52,15 @@ function explainRestricted(url) {
   if (!url) return null;
   let u;
   try { u = new URL(url); } catch { return null; }
-  if (['about:', 'moz-extension:', 'chrome:', 'resource:', 'view-source:', 'jar:'].includes(u.protocol)) {
-    return "Firefox doesn't let extensions type on its built-in pages. Open a regular website first.";
+  const builtIn = ['about:', 'moz-extension:', 'chrome:', 'chrome-extension:', 'chrome-search:', 'chrome-untrusted:',
+    'devtools:', 'edge:', 'brave:', 'opera:', 'vivaldi:', 'resource:', 'view-source:', 'jar:'];
+  if (builtIn.includes(u.protocol)) {
+    return `${BROWSER} doesn't let extensions type on its built-in pages. Open a regular website first.`;
   }
-  if (PROTECTED_HOSTS.has(u.hostname)) {
-    return `Firefox protects ${u.hostname}, so extensions can't type there.`;
+  if (PROTECTED_HOSTS.has(u.hostname) || (u.hostname === 'chrome.google.com' && u.pathname.startsWith('/webstore'))) {
+    return `${BROWSER} protects ${u.hostname}, so extensions can't type there.`;
   }
-  if (/\.pdf($|\?)/i.test(u.pathname)) return "Firefox's PDF viewer doesn't accept typing from extensions.";
+  if (/\.pdf($|\?)/i.test(u.pathname)) return "The built-in PDF viewer doesn't accept typing from extensions.";
   return null;
 }
 
@@ -70,7 +76,7 @@ async function inject(tabId, allFrames) {
     const restricted = explainRestricted(tab?.url);
     if (restricted) throw new UserError(restricted);
     if (/permission/i.test(String(err?.message))) {
-      throw new UserError('Firefox hasn\'t granted access to this tab yet. Click the Graphi toolbar button (or use its shortcut) while on this page.');
+      throw new UserError('The browser hasn\'t given Graphi access to this tab yet. Click the Graphi toolbar button (or use its shortcut) while on this page.');
     }
     throw new UserError("Graphi can't run on this page.");
   }
@@ -150,7 +156,7 @@ async function startTyping(tabId, { docId, offset = 0 } = {}) {
 
 async function sendControl(tabId, type) {
   // Only talk to tabs we know host a session: messaging a tab without the
-  // runtime makes Firefox log an "uncaught exception" even when handled.
+  // runtime logs an error in the browser console even when it's handled.
   const info = await getTabInfo(tabId);
   if (!info) return null;
   try {
@@ -302,7 +308,7 @@ browser.commands.onCommand.addListener(async (command) => {
 
 // ---- Messages from popup and content ----------------------------------------------------
 
-browser.runtime.onMessage.addListener((msg, sender) => {
+onMessage((msg, sender) => {
   if (msg?.type === 'graphi:update' && sender.tab) {
     onSessionUpdate(sender.tab.id, msg.snapshot, sender.tab.incognito);
     return undefined;
@@ -323,7 +329,11 @@ browser.runtime.onMessage.addListener((msg, sender) => {
     switch (msg?.type) {
       case 'popup:status': {
         const tab = await browser.tabs.get(msg.tabId).catch(() => null);
-        return { snapshot: await getStatus(msg.tabId), restricted: explainRestricted(tab?.url) };
+        // Chromium hides the address of pages extensions may not touch
+        // (chrome://, the Web Store), so a missing URL means "off-limits".
+        const hidden = !IS_FIREFOX && tab && !tab.url && !tab.pendingUrl;
+        const restricted = explainRestricted(tab?.url) ?? (hidden ? `${BROWSER} doesn't let extensions type on its built-in pages. Open a regular website first.` : null);
+        return { snapshot: await getStatus(msg.tabId), restricted };
       }
       case 'popup:start':
         return { ok: true, snapshot: await startTyping(msg.tabId, { docId: msg.docId, offset: msg.offset }) };
