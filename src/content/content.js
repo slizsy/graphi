@@ -584,7 +584,15 @@
     session.publish(true);
   });
 
-  browser.runtime.onMessage.addListener((msg) => {
+  // Answer through sendResponse: Chrome ignores promises returned here.
+  browser.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    const result = route(msg);
+    if (result === undefined) return false;
+    result.then(sendResponse);
+    return true;
+  });
+
+  function route(msg) {
     switch (msg?.type) {
       case 'graphi:probe': {
         let editable = false;
@@ -617,5 +625,5 @@
       default:
         return undefined;
     }
-  });
+  }
 })();
